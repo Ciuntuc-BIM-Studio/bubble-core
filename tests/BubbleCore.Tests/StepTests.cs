@@ -9,9 +9,9 @@ public class StepTests
     [Fact]
     public void A_file_round_trips_through_a_stream_with_the_application_named()
     {
-        var f = new Step { Application = "Core tests" };
-        var org = f.Add("IFCORGANIZATION", Step.Null, Step.S("Ciuntuc"), Step.Null, Step.Null, Step.Null);
-        var project = f.Add("IFCPROJECT", Step.S(Step.Guid("tests", "project")), Step.Null, Step.S("Test"), Step.Null, Step.Null, Step.Null, Step.Null, Step.Null, Step.Null);
+        var f = new StepWriter { Application = "Core tests" };
+        var org = f.Add("IFCORGANIZATION", StepWriter.Null, StepWriter.S("Ciuntuc"), StepWriter.Null, StepWriter.Null, StepWriter.Null);
+        var project = f.Add("IFCPROJECT", StepWriter.S(StepWriter.Guid("tests", "project")), StepWriter.Null, StepWriter.S("Test"), StepWriter.Null, StepWriter.Null, StepWriter.Null, StepWriter.Null, StepWriter.Null, StepWriter.Null);
         using var ms = new MemoryStream();
         f.Write(ms, "test.ifc", "ViewDefinition [ReferenceView_V1.2]");
         var text = System.Text.Encoding.UTF8.GetString(ms.ToArray());
@@ -28,33 +28,33 @@ public class StepTests
     [Fact]
     public void Guids_are_stable_and_22_characters()
     {
-        var a = Step.Guid("project", "wall-1");
-        Assert.Equal(a, Step.Guid("project", "wall-1"));
+        var a = StepWriter.Guid("project", "wall-1");
+        Assert.Equal(a, StepWriter.Guid("project", "wall-1"));
         Assert.Equal(22, a.Length);
-        Assert.NotEqual(a, Step.Guid("project", "wall-2"));
-        Assert.NotEqual(a, Step.Guid("other", "wall-1"));
+        Assert.NotEqual(a, StepWriter.Guid("project", "wall-2"));
+        Assert.NotEqual(a, StepWriter.Guid("other", "wall-1"));
     }
 
     [Fact]
     public void An_extruded_wall_is_read_as_a_mesh_in_metres()
     {
         // Millimetres in the file: a 4000 × 300 × 2800 wall.
-        var f = new Step();
+        var f = new StepWriter();
         var dir = f.Add("IFCDIRECTION", "(0.,0.,1.)");
         var origin = f.Add("IFCCARTESIANPOINT", "(0.,0.,0.)");
-        var axis = f.Add("IFCAXIS2PLACEMENT3D", origin, Step.Null, Step.Null);
-        var place = f.Add("IFCLOCALPLACEMENT", Step.Null, axis);
-        var pts = Step.L(new[] { "(0.,0.)", "(4000.,0.)", "(4000.,300.)", "(0.,300.)" }.Select(p => f.Add("IFCCARTESIANPOINT", p)));
+        var axis = f.Add("IFCAXIS2PLACEMENT3D", origin, StepWriter.Null, StepWriter.Null);
+        var place = f.Add("IFCLOCALPLACEMENT", StepWriter.Null, axis);
+        var pts = StepWriter.L(new[] { "(0.,0.)", "(4000.,0.)", "(4000.,300.)", "(0.,300.)" }.Select(p => f.Add("IFCCARTESIANPOINT", p)));
         var poly = f.Add("IFCPOLYLINE", pts);
-        var profile = f.Add("IFCARBITRARYCLOSEDPROFILEDEF", Step.E("AREA"), Step.Null, poly);
+        var profile = f.Add("IFCARBITRARYCLOSEDPROFILEDEF", StepWriter.E("AREA"), StepWriter.Null, poly);
         var solid = f.Add("IFCEXTRUDEDAREASOLID", profile, axis, dir, "2800.");
-        var ctx = f.Add("IFCGEOMETRICREPRESENTATIONCONTEXT", Step.Null, Step.S("Model"), "3", "1.E-05", axis, Step.Null);
-        var rep = f.Add("IFCSHAPEREPRESENTATION", ctx, Step.S("Body"), Step.S("SweptSolid"), Step.L([solid]));
-        var shape = f.Add("IFCPRODUCTDEFINITIONSHAPE", Step.Null, Step.Null, Step.L([rep]));
-        var wall = f.Add("IFCWALL", Step.S(Step.Guid("t", "w")), Step.Null, Step.S("W1"), Step.Null, Step.Null, place, shape, Step.Null, Step.Null);
-        var mm = f.Add("IFCSIUNIT", Step.Derived, Step.E("LENGTHUNIT"), Step.E("MILLI"), Step.E("METRE"));
-        var units = f.Add("IFCUNITASSIGNMENT", Step.L([mm]));
-        f.Add("IFCPROJECT", Step.S(Step.Guid("t", "p")), Step.Null, Step.S("P"), Step.Null, Step.Null, Step.Null, Step.Null, Step.L([ctx]), units);
+        var ctx = f.Add("IFCGEOMETRICREPRESENTATIONCONTEXT", StepWriter.Null, StepWriter.S("Model"), "3", "1.E-05", axis, StepWriter.Null);
+        var rep = f.Add("IFCSHAPEREPRESENTATION", ctx, StepWriter.S("Body"), StepWriter.S("SweptSolid"), StepWriter.L([solid]));
+        var shape = f.Add("IFCPRODUCTDEFINITIONSHAPE", StepWriter.Null, StepWriter.Null, StepWriter.L([rep]));
+        var wall = f.Add("IFCWALL", StepWriter.S(StepWriter.Guid("t", "w")), StepWriter.Null, StepWriter.S("W1"), StepWriter.Null, StepWriter.Null, place, shape, StepWriter.Null, StepWriter.Null);
+        var mm = f.Add("IFCSIUNIT", StepWriter.Derived, StepWriter.E("LENGTHUNIT"), StepWriter.E("MILLI"), StepWriter.E("METRE"));
+        var units = f.Add("IFCUNITASSIGNMENT", StepWriter.L([mm]));
+        f.Add("IFCPROJECT", StepWriter.S(StepWriter.Guid("t", "p")), StepWriter.Null, StepWriter.S("P"), StepWriter.Null, StepWriter.Null, StepWriter.Null, StepWriter.Null, StepWriter.L([ctx]), units);
         using var ms = new MemoryStream();
         f.Write(ms, "wall.ifc", "test");
 

@@ -11,7 +11,7 @@ namespace BubbleBim.Step;
 /// <see cref="S"/> a string, <see cref="R"/> a real, <see cref="E"/> an
 /// enumeration, <see cref="L{T}"/> a list, <see cref="Ref"/> a reference.
 /// </summary>
-public sealed class Step
+public sealed class StepWriter
 {
     readonly StringBuilder _data = new();
     int _next = 1;
