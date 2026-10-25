@@ -33,4 +33,4 @@ dotnet test BubbleCore.slnx
 
 ## Release
 
-A tag `v1.2.3` on `main` runs the release workflow: manifold built on macOS, Linux and Windows and for the browser, the tests on each, then one `dotnet pack` with every native library, pushed to the package feed. The version comes from the tag (MinVer).
+A tag `v1.2.3` on `main` runs the release workflow: manifold built on macOS, Linux and Windows and for the browser, the tests on each, then one `dotnet pack` with every native library, pushed to nuget.org (the repository secret `NUGET_API_KEY`). The version comes from the tag (MinVer).
