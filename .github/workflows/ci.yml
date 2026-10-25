@@ -72,12 +72,14 @@ jobs:
         with:
           node-version: 22
       # An SDK of its own in a folder the job can write, so the wasm-tools workload installs without root.
-      - run: |
-          curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
-          bash /tmp/dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet-wasm"
-          echo "DOTNET_ROOT=$HOME/.dotnet-wasm" >> "$GITHUB_ENV"
-          echo "$HOME/.dotnet-wasm" >> "$GITHUB_PATH"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
       - run: dotnet workload install wasm-tools
+      # build-manifold.mjs finds the workload's Emscripten through DOTNET_ROOT.
+      - run: echo "DOTNET_ROOT=${{ runner.temp }}/dotnet" >> "$GITHUB_ENV"
       - run: sudo apt-get update && sudo apt-get install -y cmake python3
       - uses: actions/cache@v4
         id: cache
