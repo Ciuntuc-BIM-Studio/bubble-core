@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    The engine in the browser: manifold's static libraries, linked into the
+    consumer's WebAssembly (the P/Invoke table names the library by its file
+    name, manifoldc.a, which is why it has no lib prefix).
+  -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+    <NativeFileReference Include="$(MSBuildThisFileDirectory)../runtimes/browser-wasm/native/manifoldc.a;$(MSBuildThisFileDirectory)../runtimes/browser-wasm/native/libmanifold.a;$(MSBuildThisFileDirectory)../runtimes/browser-wasm/native/libClipper2.a" />
+  </ItemGroup>
+</Project>

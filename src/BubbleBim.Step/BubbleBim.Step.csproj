@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- STEP (ISO 10303-21) read and written, and an IFC file read into geometry and attributes: what both exporters and importers stand on. -->
+  <PropertyGroup>
+    <Description>STEP physical files (ISO 10303-21) read and written, and IFC files read into BubbleBIM geometry: products, placements, materials, properties.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BubbleBim.Geometry/BubbleBim.Geometry.csproj" />
+  </ItemGroup>
+</Project>

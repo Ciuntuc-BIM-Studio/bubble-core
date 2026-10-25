@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Booleans between solids, by manifold (github.com/elalish/manifold, Apache-2.0)
+    through its C API. The native library is built by scripts/build-manifold.mjs
+    into native/<rid>/ and travels in the package under runtimes/<rid>/native/,
+    so a consumer gets it for its platform with no step of its own. For the
+    browser the static libraries are linked into the consumer's WebAssembly by
+    build/BubbleBim.Booleans.targets.
+  -->
+  <PropertyGroup>
+    <Description>Booleans between BubbleBIM solids, by manifold (Apache-2.0), with the native library for macOS, Linux, Windows and the browser.</Description>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Native>$(MSBuildThisFileDirectory)../../native/</Native>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BubbleBim.Geometry/BubbleBim.Geometry.csproj" />
+  </ItemGroup>
+  <!-- In the package: every native library that was built. -->
+  <ItemGroup>
+    <None Include="$(Native)osx-arm64/libmanifoldc.dylib" Condition="Exists('$(Native)osx-arm64/libmanifoldc.dylib')" Pack="true" PackagePath="runtimes/osx-arm64/native/" Visible="false" />
+    <None Include="$(Native)linux-x64/libmanifoldc.so" Condition="Exists('$(Native)linux-x64/libmanifoldc.so')" Pack="true" PackagePath="runtimes/linux-x64/native/" Visible="false" />
+    <None Include="$(Native)win-x64/manifoldc.dll" Condition="Exists('$(Native)win-x64/manifoldc.dll')" Pack="true" PackagePath="runtimes/win-x64/native/" Visible="false" />
+    <None Include="$(Native)browser-wasm/*.a" Condition="Exists('$(Native)browser-wasm/manifoldc.a')" Pack="true" PackagePath="runtimes/browser-wasm/native/" Visible="false" />
+    <None Include="build/BubbleBim.Booleans.targets" Pack="true" PackagePath="build/" />
+  </ItemGroup>
+  <!-- Beside the build output, for this machine, when the core is referenced as a project (not a package). -->
+  <ItemGroup>
+    <None Include="$(Native)osx-arm64/libmanifoldc.dylib" Condition="$([MSBuild]::IsOSPlatform('OSX')) And Exists('$(Native)osx-arm64/libmanifoldc.dylib')" Link="libmanifoldc.dylib" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(Native)linux-x64/libmanifoldc.so" Condition="$([MSBuild]::IsOSPlatform('Linux')) And Exists('$(Native)linux-x64/libmanifoldc.so')" Link="libmanifoldc.so" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(Native)win-x64/manifoldc.dll" Condition="$([MSBuild]::IsOSPlatform('Windows')) And Exists('$(Native)win-x64/manifoldc.dll')" Link="manifoldc.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+  <!-- A release package carries every platform: packing with one missing is an error unless asked for (BubbleCoreAllowMissingNatives=true). -->
+  <Target Name="BubbleCoreNativesPresent" BeforeTargets="GenerateNuspec" Condition="'$(BubbleCoreAllowMissingNatives)' != 'true'">
+    <Error Condition="!Exists('$(Native)osx-arm64/libmanifoldc.dylib')" Text="native/osx-arm64/libmanifoldc.dylib is missing" />
+    <Error Condition="!Exists('$(Native)linux-x64/libmanifoldc.so')" Text="native/linux-x64/libmanifoldc.so is missing" />
+    <Error Condition="!Exists('$(Native)win-x64/manifoldc.dll')" Text="native/win-x64/manifoldc.dll is missing" />
+    <Error Condition="!Exists('$(Native)browser-wasm/manifoldc.a')" Text="native/browser-wasm/manifoldc.a is missing" />
+  </Target>
+</Project>

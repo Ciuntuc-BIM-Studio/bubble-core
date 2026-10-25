@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BubbleBim.Booleans/BubbleBim.Booleans.csproj" />
+    <Project Path="src/BubbleBim.Geometry/BubbleBim.Geometry.csproj" />
+    <Project Path="src/BubbleBim.Step/BubbleBim.Step.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BubbleCore.Tests/BubbleCore.Tests.csproj" />
+  </Folder>
+</Solution>

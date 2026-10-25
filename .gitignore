@@ -1,0 +1,10 @@
+bin/
+obj/
+artifacts/
+*.user
+.DS_Store
+*.log
+# manifold is built by scripts/build-manifold.mjs; only macOS's library is committed (CI builds the others).
+native/linux-x64/
+native/win-x64/
+native/browser-wasm/

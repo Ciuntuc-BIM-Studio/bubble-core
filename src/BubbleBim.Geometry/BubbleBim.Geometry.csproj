@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The B-rep kernel: solids, extrusions, tessellation, projections, the weighted straight skeleton. No dependencies at all. -->
+  <PropertyGroup>
+    <Description>The BubbleBIM geometry kernel: a planar-faced B-rep with its tessellator, projections and the weighted straight skeleton. Used by BubbleBIM Pro and Lapin.</Description>
+  </PropertyGroup>
+</Project>

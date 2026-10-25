@@ -1,0 +1,127 @@
+name: CI
+
+# Every push and pull request: manifold built for each platform (cached while
+# the script and the imports are unchanged), the libraries built and tested on
+# each. A tag v* (release.yml) packs what this built.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  native:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macOS arm64, os: macos-14, rid: osx-arm64, lib: libmanifoldc.dylib }
+          - { name: Linux x64, os: ubuntu-22.04, rid: linux-x64, lib: libmanifoldc.so }
+          - { name: Windows x64, os: windows-2022, rid: win-x64, lib: manifoldc.dll }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y cmake
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: native/${{ matrix.rid }}
+          key: manifold-${{ matrix.rid }}-${{ hashFiles('scripts/build-manifold.mjs', 'src/BubbleBim.Booleans/ManifoldBooleans.cs') }}
+      # macOS: the committed library is rebuilt only when the cache is empty and the script changed (it is committed for local builds).
+      - name: manifold
+        if: steps.cache.outputs.cache-hit != 'true' && runner.os != 'Windows'
+        run: test -f native/${{ matrix.rid }}/${{ matrix.lib }} && [ "${{ matrix.rid }}" = osx-arm64 ] || node scripts/build-manifold.mjs
+      - name: manifold (MSVC)
+        if: steps.cache.outputs.cache-hit != 'true' && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          cmd /c "`"$vs\VC\Auxiliary\Build\vcvars64.bat`" && node scripts/build-manifold.mjs"
+          exit $LASTEXITCODE
+      - run: dotnet build BubbleCore.slnx -v q -nologo
+      - run: dotnet test BubbleCore.slnx -v q -nologo
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.rid }}
+          path: native/${{ matrix.rid }}/${{ matrix.lib }}
+          if-no-files-found: error
+
+  browser:
+    name: Browser (wasm)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # An SDK of its own in a folder the job can write, so the wasm-tools workload installs without root.
+      - run: |
+          curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+          bash /tmp/dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet-wasm"
+          echo "DOTNET_ROOT=$HOME/.dotnet-wasm" >> "$GITHUB_ENV"
+          echo "$HOME/.dotnet-wasm" >> "$GITHUB_PATH"
+      - run: dotnet workload install wasm-tools
+      - run: sudo apt-get update && sudo apt-get install -y cmake python3
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: native/browser-wasm
+          key: manifold-browser-wasm-${{ hashFiles('scripts/build-manifold.mjs') }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: node scripts/build-manifold.mjs --browser-wasm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-browser-wasm
+          path: native/browser-wasm/*.a
+          if-no-files-found: error
+
+  pack:
+    name: Pack
+    needs: [native, browser]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # MinVer reads the tags
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: artifacts/native
+      - run: |
+          mkdir -p native/osx-arm64 native/linux-x64 native/win-x64 native/browser-wasm
+          cp artifacts/native/native-osx-arm64/* native/osx-arm64/
+          cp artifacts/native/native-linux-x64/* native/linux-x64/
+          cp artifacts/native/native-win-x64/* native/win-x64/
+          cp artifacts/native/native-browser-wasm/* native/browser-wasm/
+          ls -la native/*
+      - run: dotnet pack BubbleCore.slnx -c Release -v q -nologo -o artifacts/packages
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: artifacts/packages/*.nupkg
+      # A tag publishes to the repository's package feed (GitHub Packages); nuget.org when the core is public.
+      - if: startsWith(github.ref, 'refs/tags/v')
+        run: dotnet nuget push "artifacts/packages/*.nupkg" --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key "${{ secrets.GITHUB_TOKEN }}" --skip-duplicate
