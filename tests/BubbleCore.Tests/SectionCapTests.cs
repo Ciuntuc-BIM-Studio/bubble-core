@@ -132,4 +132,20 @@ public class SectionCapTests
         Assert.Equal(4, EdgeLength(joined[1]), 6);
         Assert.Equal(2, Area(joined[0]), 6);
     }
+
+    [Fact]
+    public void Each_cap_comes_also_as_a_face_with_its_loops_in_its_plane()
+    {
+        var outer = new[] { new Vec3(-2, -2, 0), new Vec3(2, -2, 0), new Vec3(2, 2, 0), new Vec3(-2, 2, 0) };
+        var hole = new[] { new Vec3(-1, -1, 0), new Vec3(-1, 1, 0), new Vec3(1, 1, 0), new Vec3(1, -1, 0) };
+        var frame = Prism.Extrude(outer, [hole], new Vec3(0, 0, 3))!;
+        var (meshes, faces) = SectionCaps.MakeWithFaces([frame], [ClipPlane.Through(new Vec3(0, 0, 1), new Vec3(0, 0, -1))], lift: 0.001);
+        var face = Assert.Single(faces[0]);
+        Assert.Equal(2, face.Loops.Length);
+        Assert.Equal(new Vec3(0, 0, 1), face.Normal);
+        // Its loops lie where its mesh does: on the plane, lifted into what is kept.
+        Assert.All(face.Loops.SelectMany(l => l), p => Assert.Equal(0.999, face.At(p).Z, 9));
+        Assert.Equal(16 - 4, face.Loops.Sum(l => Math.Abs(Polygon2.SignedArea(l))) - 2 * 4, 9);
+        Assert.NotEmpty(meshes[0].Indices);
+    }
 }
